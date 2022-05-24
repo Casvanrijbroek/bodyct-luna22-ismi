@@ -22,7 +22,7 @@ tensorflow.keras.backend.set_floatx("float32")
 
 
 # This should point at the directory containing the source LUNA22 prequel dataset
-DATA_DIRECTORY = Path().absolute() / "LUNA22 prequel"
+DATA_DIRECTORY = Path("/home/lbosch/data/LUNA22 prequel")
 
 # This should point at a directory to put the preprocessed/generated datasets from the source data
 GENERATED_DATA_DIRECTORY = Path().absolute()
@@ -63,7 +63,7 @@ class MLProblem(Enum):
 
 
 # Here you can switch the machine learning problem to solve
-problem = MLProblem.malignancy_prediction
+problem = MLProblem.nodule_type_prediction
 
 # Configure problem specific parameters
 if problem == MLProblem.malignancy_prediction:
