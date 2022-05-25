@@ -20,7 +20,7 @@ from tensorflow.keras.layers import RandomBrightness
 import sys
 
 try:
-    DO_FLIP, DO_GAUSSIAN, DO_BRIGHTNESS, DO_ROTATION, DO_STRETCHING, DO_ZOOMING = sys.argv
+    _, DO_FLIP, DO_GAUSSIAN, DO_BRIGHTNESS, DO_ROTATION, DO_STRETCHING, DO_ZOOMING = sys.argv
 except ValueError:
     # no augmentation
     print("No augmentation performed")
@@ -74,7 +74,7 @@ class MLProblem(Enum):
 
 
 # Here you can switch the machine learning problem to solve
-problem = MLProblem.nodule_type_prediction
+problem = MLProblem.malignancy_prediction
 # Configure problem specific parameters
 if problem == MLProblem.malignancy_prediction:
     # We made this problem a binary classification problem:
@@ -206,16 +206,18 @@ validation_data_generator = UndersamplingIterator(
 )
 
 input_tensor = keras.layers.Input(shape=(3, 224, 224))
-if DO_GAUSSIAN:
+if DO_GAUSSIAN == 1:
     input_tensor = keras.layers.GaussianNoise(stddev=20)(input_tensor)
-if DO_BRIGHTNESS:
+if DO_BRIGHTNESS == 1:
     input_tensor = RandomBrightness(0.005, value_range=(-1000, 400))(input_tensor)
-if DO_ZOOMING:
+if DO_ZOOMING == 1:
     input_tensor = keras.layers.RandomZoom((-0.1, 0))(input_tensor)
-if DO_ROTATION:
+if DO_ROTATION == 1:
     input_tensor = keras.layers.RandomRotation(.2)(input_tensor)
-if DO_FLIP:
+if DO_FLIP == 1:
     input_tensor = keras.layers.RandomFlip()(input_tensor)
+if DO_STRETCHING == 1:
+    input_tensor = keras.layers.RandomZoom((-0.2, 0), (-0.2, 0))(input_tensor)
 
 # We use the VGG16 model
 model = VGG16(
