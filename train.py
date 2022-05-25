@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Tuple
 from enum import Enum, unique
 
+import keras.layers
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,11 +11,20 @@ from tensorflow.keras.applications import VGG16
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
-
+from tensorflow import image
 from balanced_sampler import sample_balanced, UndersamplingIterator
 from data import load_dataset
 from utils import maybe_download_vgg16_pretrained_weights
+from tensorflow.keras.layers import RandomBrightness
 
+import sys
+
+try:
+    DO_FLIP, DO_GAUSSIAN, DO_BRIGHTNESS, DO_ROTATION, DO_STRETCHING, DO_ZOOMING = sys.argv
+except ValueError:
+    # no augmentation
+    print("No augmentation performed")
+    pass
 
 # Enforce some Keras backend settings that we need
 tensorflow.keras.backend.set_image_data_format("channels_first")
@@ -22,7 +32,8 @@ tensorflow.keras.backend.set_floatx("float32")
 
 
 # This should point at the directory containing the source LUNA22 prequel dataset
-DATA_DIRECTORY = Path("/home/lbosch/data/LUNA22 prequel")
+DATA_DIRECTORY = Path("D:\Downloads\LIDC-IDRI_1176")
+
 
 # This should point at a directory to put the preprocessed/generated datasets from the source data
 GENERATED_DATA_DIRECTORY = Path().absolute()
@@ -64,7 +75,6 @@ class MLProblem(Enum):
 
 # Here you can switch the machine learning problem to solve
 problem = MLProblem.nodule_type_prediction
-
 # Configure problem specific parameters
 if problem == MLProblem.malignancy_prediction:
     # We made this problem a binary classification problem:
@@ -105,6 +115,7 @@ training_inputs = inputs[~validation_mask, :]
 training_labels = labels[~validation_mask, :]
 validation_inputs = inputs[validation_mask, :]
 validation_labels = labels[validation_mask, :]
+
 
 print(f"Splitted data into training and validation sets:")
 training_class_counts = np.unique(
@@ -159,6 +170,11 @@ def shared_preprocess_fn(input_batch: np.ndarray) -> np.ndarray:
 
 
 def train_preprocess_fn(input_batch: np.ndarray) -> np.ndarray:
+    """ preprocessing for training data
+
+    :param input_batch: input data
+    :return:
+    """
     input_batch = shared_preprocess_fn(input_batch=input_batch)
 
     output_batch = []
@@ -189,12 +205,23 @@ validation_data_generator = UndersamplingIterator(
     batch_size=batch_size,
 )
 
+input_tensor = keras.layers.Input(shape=(3, 224, 224))
+if DO_GAUSSIAN:
+    input_tensor = keras.layers.GaussianNoise(stddev=20)(input_tensor)
+if DO_BRIGHTNESS:
+    input_tensor = RandomBrightness(0.005, value_range=(-1000, 400))(input_tensor)
+if DO_ZOOMING:
+    input_tensor = keras.layers.RandomZoom((-0.1, 0))(input_tensor)
+if DO_ROTATION:
+    input_tensor = keras.layers.RandomRotation(.2)(input_tensor)
+if DO_FLIP:
+    input_tensor = keras.layers.RandomFlip()(input_tensor)
 
 # We use the VGG16 model
 model = VGG16(
     include_top=True,
     weights=None,
-    input_tensor=None,
+    input_tensor=input_tensor,
     input_shape=None,
     pooling=None,
     classes=num_classes,
