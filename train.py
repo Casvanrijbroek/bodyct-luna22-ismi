@@ -207,7 +207,7 @@ validation_data_generator = UndersamplingIterator(
 
 input_tensor = keras.layers.Input(shape=(3, 224, 224))
 if DO_GAUSSIAN == 1:
-    input_tensor = keras.layers.GaussianNoise(stddev=20)(input_tensor)
+    input_tensor = keras.layers.GaussianNoise(stddev=0.1)(input_tensor)
 if DO_BRIGHTNESS == 1:
     input_tensor = RandomBrightness(0.005, value_range=(-1000, 400))(input_tensor)
 if DO_ZOOMING == 1:
