@@ -6,23 +6,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import tensorflow.keras
-from tensorflow.keras.applications import VGG16
-from tensorflow.keras.optimizers import SGD
-from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.optimizers import SGD, Adam
+from tensorflow.keras.losses import categorical_crossentropy, mse
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
 
 from balanced_sampler import sample_balanced, UndersamplingIterator
 from data import load_dataset
-from utils import maybe_download_vgg16_pretrained_weights
-
+import resnet_3d
+import densenet
+from tensorflow import autograph
+# autograph.set_verbosity(2)
 
 # Enforce some Keras backend settings that we need
-tensorflow.keras.backend.set_image_data_format("channels_first")
+# tensorflow.keras.backend.set_image_data_format("channels_first")
 tensorflow.keras.backend.set_floatx("float32")
 
 
 # This should point at the directory containing the source LUNA22 prequel dataset
-DATA_DIRECTORY = Path().absolute() / "LUNA22 prequel"
+DATA_DIRECTORY = Path("C:\\Users\\Cas\\PycharmProjects\\lungChallenge\\bodyct-luna22-ismi\\data-dir")
 
 # This should point at a directory to put the preprocessed/generated datasets from the source data
 GENERATED_DATA_DIRECTORY = Path().absolute()
@@ -30,31 +31,20 @@ GENERATED_DATA_DIRECTORY = Path().absolute()
 # This should point at a directory to store the training output files
 TRAINING_OUTPUT_DIRECTORY = Path().absolute()
 
-# This should point at the pretrained model weights file for the VGG16 model.
-# The file can be downloaded here:
-# https://storage.googleapis.com/tensorflow/keras-applications/vgg16/vgg16_weights_tf_dim_ordering_tf_kernels.h5
-PRETRAINED_VGG16_WEIGHTS_FILE = (
-    Path().absolute()
-    / "pretrained_weights"
-    / "vgg16_weights_tf_dim_ordering_tf_kernels.h5"
-)
-maybe_download_vgg16_pretrained_weights(PRETRAINED_VGG16_WEIGHTS_FILE)
-
 
 # Load dataset
 # This method will generate a preprocessed dataset from the source data if it is not present (only needs to be done once)
 # Otherwise it will quickly load the generated dataset from disk
 full_dataset = load_dataset(
-    input_size=224,
-    new_spacing_mm=0.2,
-    cross_slices_only=True,
+    input_size=64,
+    new_spacing_mm=1.0,
+    cross_slices_only=False,
     generate_if_not_present=True,
     always_generate=False,
     source_data_dir=DATA_DIRECTORY,
     generated_data_dir=GENERATED_DATA_DIRECTORY,
 )
 inputs = full_dataset["inputs"]
-
 
 @unique
 class MLProblem(Enum):
@@ -63,7 +53,7 @@ class MLProblem(Enum):
 
 
 # Here you can switch the machine learning problem to solve
-problem = MLProblem.malignancy_prediction
+problem = MLProblem.nodule_type_prediction
 
 # Configure problem specific parameters
 if problem == MLProblem.malignancy_prediction:
@@ -100,24 +90,31 @@ validation_indices = sample_balanced(
     class_balance=None,  # By default sample with equal probability, e.g. for two classes : {0: 0.5, 1: 0.5}
     shuffle=True,
 )
+
 validation_mask = np.isin(np.arange(len(labels)), list(validation_indices.values()))
+
+labels_malignancy = full_dataset["labels_malignancy"]
+labels_type = full_dataset['labels_nodule_type']
+
 training_inputs = inputs[~validation_mask, :]
-training_labels = labels[~validation_mask, :]
+training_labels_malignancy = labels_malignancy[~validation_mask, :]
+training_labels_type = labels_type[~validation_mask, :]
 validation_inputs = inputs[validation_mask, :]
-validation_labels = labels[validation_mask, :]
+validation_labels_malignancy = labels_malignancy[validation_mask, :]
+validation_labels_type = labels_type[validation_mask, :]
 
 print(f"Splitted data into training and validation sets:")
 training_class_counts = np.unique(
-    np.argmax(training_labels, axis=1), return_counts=True
+    np.argmax(training_labels_malignancy, axis=1), return_counts=True
 )[1]
 validation_class_counts = np.unique(
-    np.argmax(validation_labels, axis=1), return_counts=True
+    np.argmax(validation_labels_malignancy, axis=1), return_counts=True
 )[1]
 print(
-    f"Training   set: {training_inputs.shape} {training_labels.shape} {training_class_counts}"
+    f"Training   set: {training_inputs.shape} {training_labels_malignancy.shape} {training_class_counts}"
 )
 print(
-    f"Validation set: {validation_inputs.shape} {validation_labels.shape} {validation_class_counts}"
+    f"Validation set: {validation_inputs.shape} {validation_labels_malignancy.shape} {validation_class_counts}"
 )
 
 
@@ -176,50 +173,37 @@ def validation_preprocess_fn(input_batch: np.ndarray) -> np.ndarray:
 
 training_data_generator = UndersamplingIterator(
     training_inputs,
-    training_labels,
+    labels_malignancy=training_labels_malignancy,
+    labels_type=training_labels_type,
     shuffle=True,
     preprocess_fn=train_preprocess_fn,
     batch_size=batch_size,
 )
 validation_data_generator = UndersamplingIterator(
     validation_inputs,
-    validation_labels,
+    labels_malignancy=validation_labels_malignancy,
+    labels_type=validation_labels_type,
     shuffle=False,
     preprocess_fn=validation_preprocess_fn,
     batch_size=batch_size,
 )
 
+malignancy_classes = 1  # Actually 2, but goal is to find value between 0 and 1
+type_classes = 3        # Solid, partly-solid, non-solid
+# model = dense_model(malignancy_classes, type_classes)
+model = resnet_3d.build_model((64, 64, 64, 1))
 
-# We use the VGG16 model
-model = VGG16(
-    include_top=True,
-    weights=None,
-    input_tensor=None,
-    input_shape=None,
-    pooling=None,
-    classes=num_classes,
-    classifier_activation="softmax",
-)
-
+model.compile(optimizer=SGD(lr=0.0001),
+              loss={'malignancy_regression': mse,
+                    'type_classification': categorical_crossentropy},
+              metrics={'malignancy_regression': ['AUC'],
+                       'type_classification': ['categorical_accuracy']})
 # Show the model layers
 print(model.summary())
 
-# Load the pretrained imagenet VGG model weights except for the last layer
-# Because the pretrained weights will have a data size mismatch in the last layer of our model
-# two warnings will be raised, but these can be safely ignored.
-model.load_weights(str(PRETRAINED_VGG16_WEIGHTS_FILE), by_name=True, skip_mismatch=True)
-
-# Prepare model for training by defining the loss, optimizer, and metrics to use
-# Output labels and predictions are one-hot encoded, so we use the categorical_accuracy metric
-model.compile(
-    optimizer=SGD(learning_rate=0.0001, momentum=0.8, nesterov=True),
-    loss=categorical_crossentropy,
-    metrics=["categorical_accuracy"],
-)
-
 # Start actual training process
 output_model_file = (
-    TRAINING_OUTPUT_DIRECTORY / f"vgg16_{problem.value}_best_val_accuracy.h5"
+    TRAINING_OUTPUT_DIRECTORY / f"dense_model_{problem.value}_best_val_accuracy.h5"
 )
 callbacks = [
     TerminateOnNaN(),
@@ -246,7 +230,7 @@ history = model.fit(
     validation_data=validation_data_generator,
     validation_steps=None,
     validation_freq=1,
-    epochs=250,
+    epochs=1,
     callbacks=callbacks,
     verbose=2,
 )
@@ -254,9 +238,11 @@ history = model.fit(
 
 # generate a plot using the training history...
 output_history_img_file = (
-    TRAINING_OUTPUT_DIRECTORY / f"vgg16_{problem.value}_train_plot.png"
+    TRAINING_OUTPUT_DIRECTORY / f"dense_{problem.value}_train_plot.png"
 )
 print(f"Saving training plot to: {output_history_img_file}")
+print(history.history.keys())
+# Possible values: dict_keys(['loss', 'malignancy_regression_loss', 'type_classification_loss', 'malignancy_regression_auc', 'type_classification_categorical_accuracy', 'val_loss', 'val_malignancy_regression_loss', 'val_type_classification_loss', 'val_malignancy_regression_auc', 'val_type_classification_categorical_accuracy'])
 plt.plot(history.history["categorical_accuracy"])
 plt.plot(history.history["val_categorical_accuracy"])
 plt.plot(history.history["loss"])
