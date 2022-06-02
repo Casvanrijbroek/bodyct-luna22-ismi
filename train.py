@@ -237,18 +237,31 @@ history = model.fit(
 
 
 # generate a plot using the training history...
-output_history_img_file = (
-    TRAINING_OUTPUT_DIRECTORY / f"dense_{problem.value}_train_plot.png"
+output_history_img_file_type = (
+    TRAINING_OUTPUT_DIRECTORY / f"dense_type_classification_train_plot.png"
 )
-print(f"Saving training plot to: {output_history_img_file}")
+output_history_img_file_mal = (
+    TRAINING_OUTPUT_DIRECTORY / f"dense_malignancy_prediction_train_plot.png"
+)
+print(f"Saving training plots to: {output_history_img_file}")
 print(history.history.keys())
 # Possible values: dict_keys(['loss', 'malignancy_regression_loss', 'type_classification_loss', 'malignancy_regression_auc', 'type_classification_categorical_accuracy', 'val_loss', 'val_malignancy_regression_loss', 'val_type_classification_loss', 'val_malignancy_regression_auc', 'val_type_classification_categorical_accuracy'])
-plt.plot(history.history["categorical_accuracy"])
-plt.plot(history.history["val_categorical_accuracy"])
-plt.plot(history.history["loss"])
-plt.plot(history.history["val_loss"])
+plt.plot(history.history["type_classification_categorical_accuracy"])
+plt.plot(history.history["val_type_classification_categorical_accuracy"])
+plt.plot(history.history["type_classification_loss"])
+plt.plot(history.history["val_type_classification_loss"])
 plt.title("model accuracy")
 plt.ylabel("Accuracy")
 plt.xlabel("Epoch")
-plt.legend(["Accuracy", "Validation Accuracy", "loss", "Validation Loss"])
-plt.savefig(str(output_history_img_file), bbox_inches="tight")
+plt.legend(["Accuracy", "Validation Accuracy", "Loss", "Validation Loss"])
+plt.savefig(str(output_history_img_file_type), bbox_inches="tight")
+plt.clf()
+plt.plot(history.history["malignancy_regression_auc"])
+plt.plot(history.history["val_malignancy_regression_auc"])
+plt.plot(history.history["malignancy_regression_loss"])
+plt.plot(history.history["val_malignancy_regression_loss"])
+plt.title("model AUC")
+plt.ylabel("AUC")
+plt.xlabel("Epoch")
+plt.legend(["AUC", "Validation AUC", "Loss", "Validation Loss"])
+plt.savefig(str(output_history_img_file_mal), bbox_inches="tight")
