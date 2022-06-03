@@ -95,28 +95,14 @@ class CustomResnet3DBuilder:
                                             block.shape[DIM3_AXIS]),
                                  strides=(1, 1, 1))(block_output)
         flatten1 = Flatten()(pool2)
-        if num_outputs > 1:
-            nodule_type = Dense(units=num_outputs,
-                                kernel_initializer="he_normal",
-                                name="type_classification",
-                                activation="softmax",
-                                kernel_regularizer=l2(reg_factor))(flatten1)
-            malignancy = Dense(units=2,
-                               kernel_initializer="he_normal",
-                               name="malignancy_regression",
-                               activation="sigmoid",
-                               kernel_regularizer=l2(reg_factor))(flatten1)
-        else:
-            nodule_type = Dense(units=num_outputs,
-                                kernel_initializer="he_normal",
-                                activation="sigmoid",
-                                name="type_classification",
-                                kernel_regularizer=l2(reg_factor))(flatten1)
-            malignancy = Dense(units=1,
-                               kernel_initializer="he_normal",
-                               activation="sigmoid",
-                               name="malignancy_regression",
-                               kernel_regularizer=l2(reg_factor))(flatten1)
+        nodule_type = Dense(units=num_outputs,
+                            kernel_initializer="he_normal",
+                            name="type_classification",
+                            activation="softmax")(flatten1)
+        malignancy = Dense(units=2,
+                           kernel_initializer="he_normal",
+                           name="malignancy_regression",
+                           activation="softmax")(flatten1)
 
         model = Model(inputs=input, outputs=[malignancy, nodule_type])
         return model
