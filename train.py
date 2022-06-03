@@ -230,7 +230,7 @@ history = model.fit(
     validation_data=validation_data_generator,
     validation_steps=None,
     validation_freq=1,
-    epochs=1,
+    epochs=250,
     callbacks=callbacks,
     verbose=2,
 )
