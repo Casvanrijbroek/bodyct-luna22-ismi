@@ -5,10 +5,11 @@ from enum import Enum, unique
 import numpy as np
 import matplotlib.pyplot as plt
 
-import tensorflow.keras
-from tensorflow.keras.optimizers import SGD, Adam
-from tensorflow.keras.losses import categorical_crossentropy, mse
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
+import tensorflow
+import keras
+from keras.optimizers import SGD, Adam
+from keras.losses import categorical_crossentropy, mse
+from keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
 
 from balanced_sampler import sample_balanced, UndersamplingIterator
 from data import load_dataset
@@ -23,7 +24,7 @@ tensorflow.keras.backend.set_floatx("float32")
 
 
 # This should point at the directory containing the source LUNA22 prequel dataset
-DATA_DIRECTORY = Path("C:\\Users\\Cas\\PycharmProjects\\lungChallenge\\bodyct-luna22-ismi\\data-dir")
+DATA_DIRECTORY = Path("C:\\Users\\rolan\\PycharmProjects\\bodyct-luna22-ismi\\LUNA22 prequel")
 
 # This should point at a directory to put the preprocessed/generated datasets from the source data
 GENERATED_DATA_DIRECTORY = Path().absolute()
@@ -191,7 +192,8 @@ validation_data_generator = UndersamplingIterator(
 malignancy_classes = 1  # Actually 2, but goal is to find value between 0 and 1
 type_classes = 3        # Solid, partly-solid, non-solid
 # model = dense_model(malignancy_classes, type_classes)
-model = resnet_3d.build_model((64, 64, 64, 1))
+#model = resnet_3d.build_model((64, 64, 64, 1))
+model = densenet.dense_model(malignancy_classes, type_classes)
 
 model.compile(optimizer=SGD(lr=0.0001),
               loss={'malignancy_regression': mse,
@@ -243,6 +245,9 @@ output_history_img_file_type = (
 output_history_img_file_mal = (
     TRAINING_OUTPUT_DIRECTORY / f"dense_malignancy_prediction_train_plot.png"
 )
+#output_history_img_file = (
+#    TRAINING_OUTPUT_DIRECTORY / f"dense_model_{problem.value}_train_plot.png"
+#)
 print(f"Saving training plots to: {output_history_img_file}")
 print(history.history.keys())
 # Possible values: dict_keys(['loss', 'malignancy_regression_loss', 'type_classification_loss', 'malignancy_regression_auc', 'type_classification_categorical_accuracy', 'val_loss', 'val_malignancy_regression_loss', 'val_type_classification_loss', 'val_malignancy_regression_auc', 'val_type_classification_categorical_accuracy'])

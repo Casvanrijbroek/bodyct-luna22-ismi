@@ -1,3 +1,6 @@
+import tensorflow
+
+
 def classification_layer(inputs):
     x = tensorflow.keras.layers.AveragePooling3D((2, 2, 2))(inputs)
     x = tensorflow.keras.layers.Flatten()(x)
