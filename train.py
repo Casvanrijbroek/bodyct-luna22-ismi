@@ -17,12 +17,12 @@ import resnet_3d
 # autograph.set_verbosity(2)
 
 # Enforce some Keras backend settings that we need
-# tensorflow.keras.backend.set_image_data_format("channels_first")
+tensorflow.keras.backend.set_image_data_format("channels_first")
 tensorflow.keras.backend.set_floatx("float32")
 
 
 # This should point at the directory containing the source LUNA22 prequel dataset
-DATA_DIRECTORY = Path("/gpfs/home1/lbosch/data/LUNA22 prequel")
+DATA_DIRECTORY = Path("C:\\Users\\Cas\\PycharmProjects\\lungNoduleChallenge\\bodyct-luna22-ismi\\LUNA22 prequel")
 
 # This should point at a directory to put the preprocessed/generated datasets from the source data
 GENERATED_DATA_DIRECTORY = Path().absolute()
@@ -71,7 +71,7 @@ elif problem == MLProblem.nodule_type_prediction:
     num_classes = 3
     batch_size = 30  # make this a factor of three to fit three classes evenly per batch during training
     # This dataset has only few part-solid nodules in the dataset, so we make a tiny validation set
-    num_validation_samples = batch_size * 2
+    num_validation_samples = batch_size * 3
     labels = full_dataset["labels_nodule_type"]
     # It is possible to generate training labels yourself using the raw annotations of the radiologists...
     labels_raw = full_dataset["labels_nodule_type_raw"]
@@ -190,7 +190,7 @@ validation_data_generator = UndersamplingIterator(
 malignancy_classes = 1  # Actually 2, but goal is to find value between 0 and 1
 type_classes = 3        # Solid, partly-solid, non-solid
 # model = dense_model(malignancy_classes, type_classes)
-model = resnet_3d.build_model((64, 64, 64, 1))
+model = resnet_3d.build_model((1, 64, 64, 64))
 
 model.compile(optimizer=SGD(lr=0.0001, momentum=0.8, nesterov=True),
               loss={'malignancy_regression': mse,
@@ -219,7 +219,7 @@ callbacks = [
         monitor="val_categorical_accuracy",
         mode="auto",
         min_delta=0,
-        patience=100,
+        patience=20,
         verbose=1,
     ),
 ]
