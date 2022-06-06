@@ -242,7 +242,7 @@ output_history_img_file_type = (
 output_history_img_file_mal = (
     TRAINING_OUTPUT_DIRECTORY / f"dense_malignancy_prediction_train_plot.png"
 )
-print(f"Saving training plots to: {output_history_img_file}")
+print(f"Saving training plots to: {output_history_img_file_mal} and {output_history_img_file_type}")
 print(history.history.keys())
 # Possible values: dict_keys(['loss', 'malignancy_regression_loss', 'type_classification_loss', 'malignancy_regression_auc', 'type_classification_categorical_accuracy', 'val_loss', 'val_malignancy_regression_loss', 'val_type_classification_loss', 'val_malignancy_regression_auc', 'val_type_classification_categorical_accuracy'])
 plt.plot(history.history["type_classification_categorical_accuracy"])
