@@ -6,15 +6,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import tensorflow.keras
-from tensorflow.keras.optimizers import SGD, Adam
+from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.losses import categorical_crossentropy, mse
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
 
 from balanced_sampler import sample_balanced, UndersamplingIterator
 from data import load_dataset
 import resnet_3d
-import densenet
-from tensorflow import autograph
+
 # autograph.set_verbosity(2)
 
 # Enforce some Keras backend settings that we need
@@ -193,7 +192,7 @@ type_classes = 3        # Solid, partly-solid, non-solid
 # model = dense_model(malignancy_classes, type_classes)
 model = resnet_3d.build_model((64, 64, 64, 1))
 
-model.compile(optimizer=SGD(lr=0.0001),
+model.compile(optimizer=SGD(lr=0.0001, momentum=0.8, nesterov=True),
               loss={'malignancy_regression': mse,
                     'type_classification': categorical_crossentropy},
               metrics={'malignancy_regression': ['AUC'],
