@@ -150,7 +150,7 @@ def _generate_training_dataset(
         dtype=np.float32,
     )
     if not cross_slices_only:
-        dataset_inputs = dataset_inputs[..., np.newaxis]
+        dataset_inputs = np.expand_dims(dataset_inputs, 1)
 
     labels_malignancy = np.zeros((len(nodule_info), 2), dtype=np.float32)
     labels_nodule_type = np.zeros((len(nodule_info), 3), dtype=np.float32)
@@ -181,7 +181,7 @@ def _generate_training_dataset(
             # Extract the axial/coronal/sagittal center slices of the 50 mm^3 cube
             nodule_data = get_cross_slices_from_cube(volume=nodule_data)
         else:
-            nodule_data = nodule_data[..., np.newaxis]
+            nodule_data = np.expand_dims(nodule_data, 0)
 
         # Store data
         dataset_inputs[i, :] = nodule_data
@@ -194,6 +194,9 @@ def _generate_training_dataset(
         # NOTE Number of raw texture and malignancy scores can differ between nodules
         labels_nodule_type_raw.append(nodule["Texture"])
         labels_malignancy_raw.append(nodule["Malignancy"])
+
+        if not cross_slices_only:
+            data = np.expand_dims(nodule_data, 0)
 
     return dict(
         inputs=dataset_inputs,

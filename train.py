@@ -8,19 +8,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import tensorflow.keras
-from tensorflow.keras.optimizers import SGD, Adam
+from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.losses import categorical_crossentropy, mse
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
 
 from balanced_sampler import sample_balanced, UndersamplingIterator
 from data import load_dataset
 import resnet_3d
-import densenet
-from tensorflow import autograph
+
 # autograph.set_verbosity(2)
 
 # Enforce some Keras backend settings that we need
-# tensorflow.keras.backend.set_image_data_format("channels_first")
+tensorflow.keras.backend.set_image_data_format("channels_first")
 tensorflow.keras.backend.set_floatx("float32")
 
 
@@ -220,9 +219,9 @@ validation_data_generator = UndersamplingIterator(
 malignancy_classes = 1  # Actually 2, but goal is to find value between 0 and 1
 type_classes = 3        # Solid, partly-solid, non-solid
 # model = dense_model(malignancy_classes, type_classes)
-model = resnet_3d.build_model((64, 64, 64, 1))
+model = resnet_3d.build_model((1, 64, 64, 64))
 
-model.compile(optimizer=SGD(lr=0.0001),
+model.compile(optimizer=SGD(lr=0.0001, momentum=0.8, nesterov=True),
               loss={'malignancy_regression': mse,
                     'type_classification': categorical_crossentropy},
               metrics={'malignancy_regression': ['AUC'],
@@ -249,7 +248,7 @@ callbacks = [
         monitor="val_type_classification_categorical_accuracy",
         mode="auto",
         min_delta=0,
-        patience=100,
+        patience=20,
         verbose=1,
     ),
 ]
@@ -272,6 +271,7 @@ output_history_img_file_type = (
 output_history_img_file_mal = (
     TRAINING_OUTPUT_DIRECTORY / f"dense_malignancy_prediction_train_plot.png"
 )
+
 print(f"Saving training plots to: {TRAINING_OUTPUT_DIRECTORY}")
 print(history.history.keys())
 # Possible values: dict_keys(['loss', 'malignancy_regression_loss', 'type_classification_loss', 'malignancy_regression_auc', 'type_classification_categorical_accuracy', 'val_loss', 'val_malignancy_regression_loss', 'val_type_classification_loss', 'val_malignancy_regression_auc', 'val_type_classification_categorical_accuracy'])
