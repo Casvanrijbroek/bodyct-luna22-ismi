@@ -22,7 +22,7 @@ tensorflow.keras.backend.set_floatx("float32")
 
 
 # This should point at the directory containing the source LUNA22 prequel dataset
-DATA_DIRECTORY = Path("C:\\Users\\Cas\\PycharmProjects\\lungChallenge\\bodyct-luna22-ismi\\data-dir")
+DATA_DIRECTORY = Path("/gpfs/home1/lbosch/data/LUNA22 prequel")
 
 # This should point at a directory to put the preprocessed/generated datasets from the source data
 GENERATED_DATA_DIRECTORY = Path().absolute()
