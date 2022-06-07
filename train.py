@@ -22,7 +22,7 @@ tensorflow.keras.backend.set_floatx("float32")
 
 
 # This should point at the directory containing the source LUNA22 prequel dataset
-DATA_DIRECTORY = Path("C:\\Users\\Cas\\PycharmProjects\\lungNoduleChallenge\\bodyct-luna22-ismi\\LUNA22 prequel")
+DATA_DIRECTORY = Path("/gpfs/home1/lbosch/data/LUNA22 prequel")
 
 # This should point at a directory to put the preprocessed/generated datasets from the source data
 GENERATED_DATA_DIRECTORY = Path().absolute()
@@ -242,7 +242,7 @@ output_history_img_file_type = (
 output_history_img_file_mal = (
     TRAINING_OUTPUT_DIRECTORY / f"dense_malignancy_prediction_train_plot.png"
 )
-print(f"Saving training plots to: {output_history_img_file_mal} and {output_history_img_file_type}")
+print(f"Saving training plots to: {TRAINING_OUTPUT_DIRECTORY}")
 print(history.history.keys())
 # Possible values: dict_keys(['loss', 'malignancy_regression_loss', 'type_classification_loss', 'malignancy_regression_auc', 'type_classification_categorical_accuracy', 'val_loss', 'val_malignancy_regression_loss', 'val_type_classification_loss', 'val_malignancy_regression_auc', 'val_type_classification_categorical_accuracy'])
 plt.plot(history.history["type_classification_categorical_accuracy"])
