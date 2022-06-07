@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import tensorflow.keras
-from tensorflow.keras.optimizers import SGD, Adam
+from tensorflow.keras.optimizers import SGD, Adam, Adagrad
 from tensorflow.keras import losses
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
 
@@ -180,26 +180,36 @@ def random_brightness(data: np.ndarray, factor: float) -> np.ndarray:
 
 def random_rotate(data: np.ndarray, rotation: float) -> np.ndarray:
 
-    random_rotation = [(1, 2), (2, 3), (1, 3)][np.random.randint(1, 3)]
+    # random_rotation = [(1, 2), (2, 3), (1, 3)][np.random.randint(1, 3)]
+    random_rotation = (1,2)
     angle = ((numpy.random.random_sample()*(rotation*2))-rotation)
     new_image = rotate(data[:, :, :, :], angle=angle*360, reshape=False, mode="nearest", axes=random_rotation)
 
     return new_image
 
+def alt_random_rotate(data: np.ndarray):
+    data = np.rot90(data, k=np.random.randint(0, 3), axes=(1, 2))
+    data = np.rot90(data, k=np.random.randint(0, 3), axes=(1, 3))
+    data = np.rot90(data, k=np.random.randint(0, 3), axes=(3, 2))
+    return data
+
 def train_preprocess_fn(input_batch: np.ndarray) -> np.ndarray:
     input_batch = shared_preprocess_fn(input_batch=input_batch)
 
     output_batch = []
+
     for sample in input_batch:
         # plt.imshow(sample[0, :, :, 32])
         # plt.show()
-        sample = random_flip_augmentation(sample, axis=(1, 2, 3))
-        sample = random_rotate(sample, 0.2)
-        sample = random_noise(sample, 0.03)
-        sample = random_brightness(sample, 0.3)
+        # sample = random_flip_augmentation(sample, axis=(1, 2))
+        # sample = random_rotate(sample, 0.2)
+        # sample = random_noise(sample, 0.004)
+        # sample = random_brightness(sample, 0.35)
+        # sample = alt_random_rotate(sample)
         # plt.imshow(sample[0, :, :, 32])
         # plt.show()
         output_batch.append(sample)
+
 
     return np.array(output_batch)
 
@@ -233,9 +243,6 @@ type_classes = 3        # Solid, partly-solid, non-solid
 model = resnet_3d.CustomResnet3DBuilder.build_resnet_18((1, 64, 64, 64), 3)
 
 
-# loss = losses.categorical_crossentropy()
-
-
 model.compile(optimizer=Adam(learning_rate=0.001),
               loss={'malignancy_regression': losses.mse,
                     'type_classification': losses.categorical_crossentropy},
@@ -266,7 +273,7 @@ callbacks = [
         monitor2="val_malignancy_regression_auc",
         mode="auto",
         min_delta=0,
-        patience=20,
+        patience=100,
         verbose=1,
     ),
 ]
