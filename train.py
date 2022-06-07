@@ -68,7 +68,7 @@ elif problem == MLProblem.nodule_type_prediction:
     num_classes = 3
     batch_size = 30  # make this a factor of three to fit three classes evenly per batch during training
     # This dataset has only few part-solid nodules in the dataset, so we make a tiny validation set
-    num_validation_samples = batch_size * 3
+    num_validation_samples = batch_size * 2
     labels = full_dataset["labels_nodule_type"]
     # It is possible to generate training labels yourself using the raw annotations of the radiologists...
     labels_raw = full_dataset["labels_nodule_type_raw"]
