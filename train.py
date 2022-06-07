@@ -1,6 +1,5 @@
 from pathlib import Path
 from typing import Tuple
-from enum import Enum, unique
 
 import numpy.random
 from scipy.ndimage import rotate
@@ -13,6 +12,7 @@ from tensorflow.keras.losses import categorical_crossentropy, mse
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
 
 from balanced_sampler import sample_balanced, UndersamplingIterator
+from helper_functions import MLProblem
 from data import load_dataset
 import resnet_3d
 
@@ -46,11 +46,6 @@ full_dataset = load_dataset(
     generated_data_dir=GENERATED_DATA_DIRECTORY,
 )
 inputs = full_dataset["inputs"]
-
-@unique
-class MLProblem(Enum):
-    malignancy_prediction = "malignancy"
-    nodule_type_prediction = "noduletype"
 
 
 # Here you can switch the machine learning problem to solve
@@ -203,6 +198,7 @@ training_data_generator = UndersamplingIterator(
     training_inputs,
     labels_malignancy=training_labels_malignancy,
     labels_type=training_labels_type,
+    problem=problem,
     shuffle=True,
     preprocess_fn=train_preprocess_fn,
     batch_size=batch_size,
@@ -211,6 +207,7 @@ validation_data_generator = UndersamplingIterator(
     validation_inputs,
     labels_malignancy=validation_labels_malignancy,
     labels_type=validation_labels_type,
+    problem=problem,
     shuffle=False,
     preprocess_fn=validation_preprocess_fn,
     batch_size=batch_size,
