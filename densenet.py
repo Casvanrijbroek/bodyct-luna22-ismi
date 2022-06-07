@@ -1,3 +1,6 @@
+import tensorflow
+tensorflow.keras.backend.set_image_data_format("channels_first")
+
 def classification_layer(inputs):
     x = tensorflow.keras.layers.AveragePooling3D((2, 2, 2))(inputs)
     x = tensorflow.keras.layers.Flatten()(x)
@@ -41,7 +44,7 @@ def add_transition_blocks(x, idx):
 
 
 def add_network_blocks(x):
-    filter_list = [160, 176, 184, 188, 190]
+    filter_list = [96, 176, 184, 188, 190]
     # Create dense block
     for block, filter_size in enumerate(filter_list):
         # Add dense block
@@ -52,8 +55,8 @@ def add_network_blocks(x):
 
 
 def dense_model(m_classes, t_classes):
-    input_layer = tensorflow.keras.layers.Input(shape=(64, 64, 64, 1))
-    x = tensorflow.keras.layers.Conv3D(filters=64, kernel_size=(3, 3, 3), padding='same')(input_layer)
+    input_layer = tensorflow.keras.layers.Input(shape=(1, 64, 64, 64))
+    x = tensorflow.keras.layers.Conv3D(filters=96, kernel_size=(3, 3, 3), padding='same')(input_layer)
     x = add_network_blocks(x)
     x = tensorflow.keras.layers.MaxPooling3D()(x)
 
