@@ -129,7 +129,7 @@ print(
 def random_rotate(data: np.ndarray, rotation: float) -> np.ndarray:
 
     angle = ((numpy.random.random_sample()*(rotation*2))-rotation)
-    new_image = rotate(data[:, :, :], angle=angle*360, reshape=False, mode="nearest")
+    new_image = rotate(data[:, :, :], angle=angle*360, reshape=False, mode="nearest", axes=(1, 2))
 
     return new_image
 
