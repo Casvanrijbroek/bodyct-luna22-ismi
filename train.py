@@ -201,15 +201,14 @@ def train_preprocess_fn(input_batch: np.ndarray) -> np.ndarray:
     for sample in input_batch:
         # plt.imshow(sample[0, :, :, 32])
         # plt.show()
-        # sample = random_flip_augmentation(sample, axis=(1, 2))
+        sample = random_flip_augmentation(sample, axis=(1, 2))
         # sample = random_rotate(sample, 0.2)
-        # sample = random_noise(sample, 0.004)
-        # sample = random_brightness(sample, 0.35)
-        # sample = alt_random_rotate(sample)
+        sample = random_noise(sample, 0.004)
+        sample = random_brightness(sample, 0.35)
+        sample = alt_random_rotate(sample)
         # plt.imshow(sample[0, :, :, 32])
         # plt.show()
         output_batch.append(sample)
-
 
     return np.array(output_batch)
 
