@@ -5,26 +5,24 @@ from enum import Enum, unique
 import numpy as np
 import matplotlib.pyplot as plt
 
-import tensorflow
-import keras
-from keras.optimizers import SGD, Adam
-from keras.losses import categorical_crossentropy, mse
-from keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
+import tensorflow.keras
+from tensorflow.keras.optimizers import SGD, Adam
+from tensorflow.keras.losses import categorical_crossentropy, mse
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TerminateOnNaN
 
 from balanced_sampler import sample_balanced, UndersamplingIterator
+from helper_functions import MLProblem
 from data import load_dataset
-import resnet_3d
-import densenet
-from tensorflow import autograph
+import densenet_multi as dm
 # autograph.set_verbosity(2)
 
 # Enforce some Keras backend settings that we need
-# tensorflow.keras.backend.set_image_data_format("channels_first")
+tensorflow.keras.backend.set_image_data_format("channels_first")
 tensorflow.keras.backend.set_floatx("float32")
 
 
 # This should point at the directory containing the source LUNA22 prequel dataset
-DATA_DIRECTORY = Path("C:\\Users\\rolan\\PycharmProjects\\bodyct-luna22-ismi\\LUNA22 prequel")
+DATA_DIRECTORY = Path("C:\\Users\\Roland Leferink\\PycharmProjects\\bodyct-luna22-ismi\\LUNA22 prequel")
 
 # This should point at a directory to put the preprocessed/generated datasets from the source data
 GENERATED_DATA_DIRECTORY = Path().absolute()
@@ -47,14 +45,8 @@ full_dataset = load_dataset(
 )
 inputs = full_dataset["inputs"]
 
-@unique
-class MLProblem(Enum):
-    malignancy_prediction = "malignancy"
-    nodule_type_prediction = "noduletype"
-
-
 # Here you can switch the machine learning problem to solve
-problem = MLProblem.nodule_type_prediction
+problem = MLProblem.malignancy_prediction
 
 # Configure problem specific parameters
 if problem == MLProblem.malignancy_prediction:
@@ -176,6 +168,7 @@ training_data_generator = UndersamplingIterator(
     training_inputs,
     labels_malignancy=training_labels_malignancy,
     labels_type=training_labels_type,
+    problem=problem,
     shuffle=True,
     preprocess_fn=train_preprocess_fn,
     batch_size=batch_size,
@@ -184,6 +177,7 @@ validation_data_generator = UndersamplingIterator(
     validation_inputs,
     labels_malignancy=validation_labels_malignancy,
     labels_type=validation_labels_type,
+    problem=problem,
     shuffle=False,
     preprocess_fn=validation_preprocess_fn,
     batch_size=batch_size,
@@ -193,7 +187,10 @@ malignancy_classes = 1  # Actually 2, but goal is to find value between 0 and 1
 type_classes = 3        # Solid, partly-solid, non-solid
 # model = dense_model(malignancy_classes, type_classes)
 #model = resnet_3d.build_model((64, 64, 64, 1))
-model = densenet.dense_model(malignancy_classes, type_classes)
+#model = densenet.dense_model(malignancy_classes, type_classes)
+model = dm.multi_dense_model()
+
+print(model.summary())
 
 model.compile(optimizer=SGD(lr=0.0001),
               loss={'malignancy_regression': mse,
@@ -201,7 +198,7 @@ model.compile(optimizer=SGD(lr=0.0001),
               metrics={'malignancy_regression': ['AUC'],
                        'type_classification': ['categorical_accuracy']})
 # Show the model layers
-print(model.summary())
+#print(model.summary())
 
 # Start actual training process
 output_model_file = (
@@ -232,7 +229,7 @@ history = model.fit(
     validation_data=validation_data_generator,
     validation_steps=None,
     validation_freq=1,
-    epochs=250,
+    epochs=1,
     callbacks=callbacks,
     verbose=2,
 )
@@ -245,10 +242,7 @@ output_history_img_file_type = (
 output_history_img_file_mal = (
     TRAINING_OUTPUT_DIRECTORY / f"dense_malignancy_prediction_train_plot.png"
 )
-#output_history_img_file = (
-#    TRAINING_OUTPUT_DIRECTORY / f"dense_model_{problem.value}_train_plot.png"
-#)
-print(f"Saving training plots to: {output_history_img_file}")
+print(f"Saving training plots to: {TRAINING_OUTPUT_DIRECTORY}")
 print(history.history.keys())
 # Possible values: dict_keys(['loss', 'malignancy_regression_loss', 'type_classification_loss', 'malignancy_regression_auc', 'type_classification_categorical_accuracy', 'val_loss', 'val_malignancy_regression_loss', 'val_type_classification_loss', 'val_malignancy_regression_auc', 'val_type_classification_categorical_accuracy'])
 plt.plot(history.history["type_classification_categorical_accuracy"])
@@ -270,3 +264,16 @@ plt.ylabel("AUC")
 plt.xlabel("Epoch")
 plt.legend(["AUC", "Validation AUC", "Loss", "Validation Loss"])
 plt.savefig(str(output_history_img_file_mal), bbox_inches="tight")
+output_history_img_file = (
+    TRAINING_OUTPUT_DIRECTORY / f"dense_{problem.value}_train_plot.png"
+)
+print(f"Saving training plot to: {output_history_img_file}")
+plt.plot(history.history["categorical_accuracy"])
+plt.plot(history.history["val_categorical_accuracy"])
+plt.plot(history.history["loss"])
+plt.plot(history.history["val_loss"])
+plt.title("model accuracy")
+plt.ylabel("Accuracy")
+plt.xlabel("Epoch")
+plt.legend(["Accuracy", "Validation Accuracy", "loss", "Validation Loss"])
+plt.savefig(str(output_history_img_file), bbox_inches="tight")

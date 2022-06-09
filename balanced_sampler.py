@@ -3,6 +3,8 @@ import numpy as np
 
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, Iterator
 
+from helper_functions import MLProblem
+
 
 def _sanitize_class_balance(
     classes: List[int], class_balance: Optional[Dict[int, float]] = None
@@ -82,6 +84,7 @@ class UndersamplingIterator(Iterator):
         inputs: np.ndarray,
         labels_malignancy: np.ndarray,
         labels_type: np.ndarray,
+        problem,
         batch_size: int = 32,
         class_balance: Optional[Dict[int, float]] = None,
         shuffle: bool = True,
@@ -89,10 +92,16 @@ class UndersamplingIterator(Iterator):
         seed: np.random.RandomState = None,
     ):
         self._inputs = inputs
-        self._labels = labels_malignancy  # Malignancy
-        self._labels_extra = labels_type
+        self._labels_mal = labels_malignancy
+        self._labels_type = labels_type
         self._preprocess_fn = preprocess_fn
-        self._labels_argmax = np.argmax(self._labels, axis=1)
+        if problem == MLProblem.nodule_type_prediction:
+            self._type_first = True
+            self._labels_argmax = np.argmax(self._labels_type, axis=1)
+        else:
+            self._type_first = False
+            self._labels_argmax = np.argmax(self._labels_mal, axis=1)
+        # self._labels_argmax = np.argmax(self._labels, axis=1)
         self._batch_size = batch_size
         self._class_balance = class_balance
         self._shuffle = shuffle
@@ -146,11 +155,11 @@ class UndersamplingIterator(Iterator):
             A batch
         """
         indices = self._sampled_batch_indices[index]
-        X, y = self._inputs[indices, :], self._labels[indices, :]
+        X, y = self._inputs[indices, :], self._labels_type[indices, :]
         if self._preprocess_fn is not None:
             X = self._preprocess_fn(X)
 
-        return X, {'malignancy_regression': y, 'type_classification': self._labels_extra[indices, :]} # self._labels_extra added
+        return X, {'malignancy_regression': self._labels_mal[indices, :], 'type_classification': y} # self._labels_extra added
 
     def __len__(self) -> int:
         return self._req_batches
