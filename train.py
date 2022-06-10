@@ -50,7 +50,7 @@ inputs = full_dataset["inputs"]
 
 
 # Here you can switch the machine learning problem to solve
-problem = MLProblem.malignancy_prediction
+problem = MLProblem.nodule_type_prediction
 
 # Configure problem specific parameters
 if problem == MLProblem.malignancy_prediction:
