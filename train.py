@@ -185,14 +185,11 @@ validation_data_generator = UndersamplingIterator(
 
 malignancy_classes = 1  # Actually 2, but goal is to find value between 0 and 1
 type_classes = 3        # Solid, partly-solid, non-solid
-# model = dense_model(malignancy_classes, type_classes)
-#model = resnet_3d.build_model((64, 64, 64, 1))
-#model = densenet.dense_model(malignancy_classes, type_classes)
-model = dm.multi_dense_model()
+model = dm.multi_dense_model((1, 64, 64, 64))
 
 print(model.summary())
 
-model.compile(optimizer=SGD(lr=0.0001),
+model.compile(optimizer=SGD(learning_rate=0.0001),
               loss={'malignancy_regression': mse,
                     'type_classification': categorical_crossentropy},
               metrics={'malignancy_regression': ['AUC'],
@@ -208,7 +205,7 @@ callbacks = [
     TerminateOnNaN(),
     ModelCheckpoint(
         str(output_model_file),
-        monitor="val_categorical_accuracy",
+        monitor="val_type_classification_categorical_accuracy", # val_categorical_accuracy
         mode="auto",
         verbose=1,
         save_best_only=True,
@@ -216,7 +213,7 @@ callbacks = [
         save_freq="epoch",
     ),
     EarlyStopping(
-        monitor="val_categorical_accuracy",
+        monitor="val_type_classification_categorical_accuracy",
         mode="auto",
         min_delta=0,
         patience=100,
@@ -229,7 +226,7 @@ history = model.fit(
     validation_data=validation_data_generator,
     validation_steps=None,
     validation_freq=1,
-    epochs=1,
+    epochs=100,
     callbacks=callbacks,
     verbose=2,
 )
@@ -264,16 +261,3 @@ plt.ylabel("AUC")
 plt.xlabel("Epoch")
 plt.legend(["AUC", "Validation AUC", "Loss", "Validation Loss"])
 plt.savefig(str(output_history_img_file_mal), bbox_inches="tight")
-output_history_img_file = (
-    TRAINING_OUTPUT_DIRECTORY / f"dense_{problem.value}_train_plot.png"
-)
-print(f"Saving training plot to: {output_history_img_file}")
-plt.plot(history.history["categorical_accuracy"])
-plt.plot(history.history["val_categorical_accuracy"])
-plt.plot(history.history["loss"])
-plt.plot(history.history["val_loss"])
-plt.title("model accuracy")
-plt.ylabel("Accuracy")
-plt.xlabel("Epoch")
-plt.legend(["Accuracy", "Validation Accuracy", "loss", "Validation Loss"])
-plt.savefig(str(output_history_img_file), bbox_inches="tight")
