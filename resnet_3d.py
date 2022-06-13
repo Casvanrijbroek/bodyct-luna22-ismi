@@ -1,3 +1,8 @@
+"""
+Credit for the skeleton code published by https://github.com/JihongJu/keras-resnet3d
+
+This file contains the code neccessary to create a two-ouput ResNet model for the LUNA challenge.
+"""
 from __future__ import (
     absolute_import,
     division,
