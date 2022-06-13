@@ -1,4 +1,4 @@
-# bodyct-luna22-ismi-baseline
+# bodyct-luna22-Team1
 Repo for training Team 1's algorithms for LUNA22-ismi challenge
 
 
