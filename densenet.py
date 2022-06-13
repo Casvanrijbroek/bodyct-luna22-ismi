@@ -3,6 +3,7 @@ import tensorflow.keras
 tensorflow.keras.backend.set_image_data_format("channels_first")
 
 
+# Creates the type classification layers + output
 def classification_layer(inputs):
     x = tensorflow.keras.layers.Dense(512, activation='relu')(inputs)
     x = tensorflow.keras.layers.Dense(256, activation='relu')(x)
@@ -10,6 +11,7 @@ def classification_layer(inputs):
     return output_type
 
 
+# Creates the malignancy regression layers + output
 def regression_layer(inputs):
     x = tensorflow.keras.layers.Dense(512, activation='relu')(inputs)
     x = tensorflow.keras.layers.Dense(256, activation='relu')(x)
@@ -17,21 +19,8 @@ def regression_layer(inputs):
     return output_mal
 
 
-def add_dense_blocks_old(inputs, filter_size):
-    for i in range(3):
-        x_1 = tensorflow.keras.layers.Conv3D(filters=filter_size, kernel_size=(1, 1, 1), padding='same',
-                                             activation='relu', kernel_initializer='he_normal')(inputs)
-        if i != 0:
-            inputs = tensorflow.keras.layers.Concatenate(axis=1)([x_1, inputs])  # axis=1
-        else:
-            inputs = x_1
-        x_2 = tensorflow.keras.layers.Conv3D(filters=filter_size, kernel_size=(3, 3, 3), padding='same',
-                                             activation='relu', kernel_initializer='he_normal')(inputs)
-        inputs = tensorflow.keras.layers.Concatenate(axis=1)([x_2, inputs])  # axis=1
-        filter_size += 32
-    return inputs
-
-
+# Creates dense blocks. concat_x1 and concat_x2 are different layers that concatenate from their respective layer in each iteration,
+# and are used as the input for the other layer.
 def add_dense_blocks(inputs, filter_size):
     x_1 = tensorflow.keras.layers.Conv3D(filters=filter_size, kernel_size=(1, 1, 1), padding='same',
                                          activation='relu', kernel_initializer='he_normal')(inputs)
@@ -53,6 +42,7 @@ def add_dense_blocks(inputs, filter_size):
     return x_2
 
 
+# Creates transition layers that are used between each block. Consists of a convolutional layer and a pooling layer.
 def add_transition_blocks(x, transition_filter):
     x = tensorflow.keras.layers.Conv3D(filters=transition_filter, kernel_size=(1, 1, 1), padding='same',
                                        activation='relu', kernel_initializer='he_normal')(x)
@@ -60,6 +50,8 @@ def add_transition_blocks(x, transition_filter):
     return x
 
 
+# Creates a pre-specified amount of dense blocks. For each block, the function to create a block and the function to create a
+# transition layer are called.
 def add_network_blocks(x, block_amount, filter_list):
     # Create dense block
     for block in range(block_amount):
@@ -69,7 +61,8 @@ def add_network_blocks(x, block_amount, filter_list):
         x = add_transition_blocks(x, filter_list[block]//2)
     return x
 
-
+# The function that fully builds the model. The input shape has to be specified to call it, the filter_list can be specified.
+# 5 dense blocks are built in total, and the final layer gets split between layers for malignancy and for type.
 def build_model(input_shape, filter_list=[160, 176, 184, 188, 190]):
     input_layer = tensorflow.keras.layers.Input(shape=input_shape)
     x = tensorflow.keras.layers.Conv3D(filters=64, kernel_size=(3, 3, 3), padding='same',
