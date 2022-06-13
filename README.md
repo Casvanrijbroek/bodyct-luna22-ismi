@@ -1,5 +1,5 @@
 # bodyct-luna22-ismi-baseline
-Repo for training the baseline algorithm for LUNA22-ismi challenge
+Repo for training Team 1's algorithms for LUNA22-ismi challenge
 
 
 ## Preparing the dataset
@@ -10,3 +10,5 @@ To train the algorithm, just execute the following script:
 ```bash
 python train.py
 ```
+
+The defaul model is currently ResNet18. If you want to run another model you need to change the model declaration in train.py
